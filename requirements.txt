@@ -1,0 +1,6 @@
+langchain
+langchain-community
+PyMuPDF
+arxiv
+tqdm
+langgragh
