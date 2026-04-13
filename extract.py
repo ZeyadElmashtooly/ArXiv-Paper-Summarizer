@@ -15,6 +15,3 @@ def extract_pages(state: Dict) -> Dict:
     state["pages"] = pages
     return state
 
-    print(f"✅ Extracted {len(pages)} pages")
-    state["pages"] = pages
-    return state
