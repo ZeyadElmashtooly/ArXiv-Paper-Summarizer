@@ -55,4 +55,4 @@ def build_graph():
 if __name__ == "__main__":
     query = input("Enter a research paper title or topic: ")
     graph = build_graph()
-    graph.invoke({"query": query})
+    graph.invoke({"query": query, "pages": []})
