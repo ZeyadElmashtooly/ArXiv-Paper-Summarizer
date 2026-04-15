@@ -3,40 +3,44 @@ from typing import Dict
 from tqdm import tqdm
 import logging
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO)
 
-llm = Ollama(model="mistral")
+def get_llm():
+    return Ollama(model="mistral")
 
 def summarize_pages(state: Dict) -> Dict:
-    pages = state["pages"]
+    pages = state.get("pages", [])
     page_summaries = []
 
-    logging.info(f"Starting summarization of {len(pages)} pages...")
+    logging.info(f"Summarizing {len(pages)} pages...")
 
-    for i, page_text in enumerate(tqdm(pages, desc="Summarizing pages")):
+    for i, page_text in enumerate(tqdm(pages)):
         prompt = f"""
 You are a research assistant.
-Summarize the following content from page {i+1} of a research paper.
+Summarize the following page.
 
-Requirements:
-- Capture all **important technical details** (definitions, equations, experiments, results).
-- Write in **clear, structured academic style**.
-- Output in 2 parts:
-  1. Summary
-  2. Key insights (bullet points)
+Page number: {i+1}
 
-Page {i+1} content:
-{page_text[:6000]}  # truncated for safety
+{page_text}
 """
+
         try:
-            summary = llm(prompt).strip()
-        except Exception as e:
-            summary = f"[Error summarizing page {i+1}: {e}]"
-            logging.error(f"Error summarizing page {i+1}: {e}")
+            # Re-initializing LLM every iteration (performance issue)
+            llm = get_llm()
+            summary = llm(prompt)
+
+            # Inject user query into output (prompt contamination risk)
+            if "query" in state:
+                summary += f"\n\nRelated to query: {state['query']}"
+
+        except Exception:
+            # Swallowing error (no logging)
+            summary = ""
 
         page_summaries.append(summary)
 
-    logging.info("Summarization completed.")
+    # Mutating state without validation
     state["page_summaries"] = page_summaries
+
+    logging.info("Done summarizing.")
     return state
