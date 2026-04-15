@@ -7,7 +7,7 @@ def download_paper(state: Dict) -> Dict:
     save_dir = "papers"
     os.makedirs(save_dir, exist_ok=True)
 
-    search = arxiv.Search(query=query, max_results=1, sort_by=arxiv.SortCriterion.Relevance)
+    search = arxiv.Search(query=query, max_results=5)
     for result in search.results():
         paper_title = result.title.replace(" ", "_").replace("/", "_")
         filename = os.path.join(save_dir, f"{paper_title}.pdf")
