@@ -7,9 +7,10 @@ from extract import extract_pages
 from summarize import summarize_pages
 from combine import combine_summaries
 
-# ----------------------------
-# Step 5: Save results to file
-# ----------------------------
+# NEW IMPORTS
+from impact_analyzer import find_impacted_files
+from brain_manager import load_brain
+
 def save_results(state: Dict) -> Dict:
     query = state["query"]
     page_summaries = state["page_summaries"]
@@ -29,11 +30,10 @@ def save_results(state: Dict) -> Dict:
     print(f"\n✅ Full summary saved to {output_file}")
     return state
 
-# ----------------------------
-# LangGraph workflow
-# ----------------------------
+
 def build_graph():
     workflow = StateGraph(dict)
+
     workflow.add_node("download_paper", download_paper)
     workflow.add_node("extract_pages", extract_pages)
     workflow.add_node("summarize_pages", summarize_pages)
@@ -49,9 +49,18 @@ def build_graph():
 
     return workflow.compile()
 
-# ----------------------------
-# Run
-# ----------------------------
+
+# 🔥 NEW FUNCTION (used for PR agent testing)
+def analyze_impact(changed_files):
+    brain = load_brain()
+    impacted = find_impacted_files(changed_files)
+
+    print(f"Changed: {changed_files}")
+    print(f"Impacted: {impacted}")
+
+    return impacted
+
+
 if __name__ == "__main__":
     query = input("Enter a research paper title or topic: ")
     graph = build_graph()
