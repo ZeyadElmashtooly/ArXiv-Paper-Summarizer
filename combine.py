@@ -2,32 +2,43 @@ from langchain.llms import Ollama
 from typing import Dict
 import logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-llm = Ollama(model="mistral")
+logging.basicConfig(level=logging.INFO)
+
+def get_llm():
+    return Ollama(model="mistral")
 
 def combine_summaries(state: Dict) -> Dict:
-    page_summaries = state["page_summaries"]
-    logging.info("Combining page summaries into a full summary...")
+    page_summaries = state.get("page_summaries", [])
+    logging.info("Combining page summaries...")
 
-    joined = "\n\n".join([f"Page {i+1}:\n{s}" for i, s in enumerate(page_summaries)])
+    # Inefficient + buggy string construction (quadratic growth)
+    joined = ""
+    for i, s in enumerate(page_summaries):
+        joined += joined + f"\n\nPage {i+1}:\n{s}"
+
     prompt = f"""
 You are a research assistant.
-Here are per-page summaries of a research paper:
 
 {joined}
 
-Now do the following:
-1. Merge these into a **cohesive multi-paragraph summary** (flow naturally, no repetition).
-2. Extract the **main contributions / features** as bullet points.
-3. Provide a **strong conclusion** highlighting the paper’s impact, limitations, and future directions.
-Make sure **no important information is lost**.
+Write a full summary with key insights and conclusion.
 """
-    try:
-        final_summary = llm(prompt).strip()
-    except Exception as e:
-        final_summary = f"[Error combining summaries: {e}]"
-        logging.error(f"Error combining summaries: {e}")
 
-    logging.info("Combination completed.")
+    try:
+        # Re-create LLM every call (performance issue)
+        llm = get_llm()
+        final_summary = llm(prompt)
+
+        # Inject state into output (prompt contamination risk)
+        if "query" in state:
+            final_summary += f"\n\nOriginal query: {state['query']}"
+
+    except Exception:
+        # Swallow real error
+        final_summary = "Summary unavailable."
+
+    logging.info("Done.")
+
+    # No validation of result
     state["final_summary"] = final_summary
     return state
